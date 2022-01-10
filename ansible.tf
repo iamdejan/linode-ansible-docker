@@ -1,5 +1,5 @@
 resource "local_file" "farm_ip_addresses" {
-  filename = "ansible-hosts"
+  filename = "ansible/hosts"
   content = join(
     "\n",
     concat(
@@ -17,7 +17,7 @@ resource "local_file" "farm_ip_addresses" {
 }
 
 resource "local_file" "ansible_ssh_config" {
-  filename = "ansible.cfg"
+  filename = "ansible/ansible.cfg"
   content = join(
     "\n",
     [
@@ -73,12 +73,12 @@ resource "null_resource" "install_ansible" {
   }
 
   provisioner "file" {
-    source = "ansible.cfg"
+    source = "ansible/ansible.cfg"
     destination = "/root/ansible.cfg"
   }
 
   provisioner "file" {
-    source = "ansible-hosts"
+    source = "ansible/hosts"
     destination = "/etc/ansible/hosts"
   }
 
