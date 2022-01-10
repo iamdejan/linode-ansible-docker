@@ -1,5 +1,5 @@
 variable "token" {
-  description = "Linode API token"
+  description = "Linode API token."
 }
 
 variable "region" {
@@ -15,5 +15,10 @@ variable "instance_type" {
 }
 
 variable "root_password" {
-  description = "Server root password"
+  description = "Server root password."
+}
+
+variable "ansible_group" {
+  description = "Group name for Ansible execution later."
+  default = "farm"
 }
