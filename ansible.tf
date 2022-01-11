@@ -26,31 +26,31 @@ resource "local_file" "ansible_playbook" {
       "---",
       yamlencode([
         {
-        "name": "docker",
-        "hosts": var.ansible_group,
-        "tasks": concat([
-          {
-            "name": "get apt-key for docker repo",
-            "apt_key": {
-              "url": "https://download.docker.com/linux/ubuntu/gpg"
-              "state": "present"
+          "name": "docker",
+          "hosts": var.ansible_group,
+          "tasks": concat([
+            {
+              "name": "get apt-key for docker repo",
+              "apt_key": {
+                "url": "https://download.docker.com/linux/ubuntu/gpg"
+                "state": "present"
+              }
+            },
+            {
+              "name": "ensure docker official repo exists"
+              "apt_repository": {
+                "repo": "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable",
+                "state": "present"
+              }
             }
-          },
-          {
-            "name": "ensure docker official repo exists"
-            "apt_repository": {
-              "repo": "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable",
-              "state": "present"
+          ], [for pkg in ["curl", "software-properties-common", "ca-certificates", "apt-transport-https", "docker-ce"]: {
+            "name": format("ensure %s exists", pkg),
+            "apt": {
+              "name": pkg,
+              "state": "latest"
             }
-          }
-        ], [for pkg in ["curl", "software-properties-common", "ca-certificates", "apt-transport-https", "docker-ce"]: {
-          "name": format("ensure %s exists", pkg),
-          "apt": {
-            "name": pkg,
-            "state": "latest"
-          }
-        }])
-      }
+          }])
+        }
       ])
     ]
   )
