@@ -14,6 +14,11 @@ variable "instance_type" {
   default = "g6-nanode-1"
 }
 
+variable "root_user" {
+  description = "Username for root access."
+  default = "root"
+}
+
 variable "root_password" {
   description = "Server root password."
 }

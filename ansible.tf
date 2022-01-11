@@ -1,4 +1,5 @@
 resource "local_file" "farm_ip_addresses" {
+  depends_on = [linode_instance.control_plane]
   filename = "ansible/hosts"
   content = join(
     "\n",
@@ -8,7 +9,7 @@ resource "local_file" "farm_ip_addresses" {
       [
         "",
         format("[%s:vars]", var.ansible_group),
-        format("ansible_user=root"),
+        format("ansible_user=%s", var.root_user),
         format("ansible_password=%s", var.root_password),
         ""
       ]
@@ -16,43 +17,85 @@ resource "local_file" "farm_ip_addresses" {
   )
 }
 
-resource "local_file" "ansible_ssh_config" {
-  filename = "ansible/ansible.cfg"
+resource "local_file" "ansible_playbook" {
+  depends_on = [linode_instance.control_plane]
+  filename = "ansible/playbook.yaml"
   content = join(
     "\n",
     [
-      "[defaults]",
-      "",
-      "host_key_checking = False",
-      "",
-      "[inventory]",
-      "",
-      "[privilege_escalation]",
-      "",
-      "[paramiko_connection]",
-      "",
-      "[ssh_connection]",
-      "",
-      "[persistent_connection]",
-      "",
-      "[accelerate]",
-      "",
-      "[selinux]",
-      "",
-      "[colors]",
-      "",
-      "[diff]",
-      ""
+      "---",
+      yamlencode([
+        {
+        "name": "docker",
+        "hosts": var.ansible_group,
+        "tasks": [
+          {
+            "name": "ensure apt-transport-https exists",
+            "apt": {
+              "name": "apt-transport-https"
+              "state": "latest"
+            }
+          },
+          {
+            "name": "ensure ca-certificates exists",
+            "apt": {
+              "name": "ca-certificates",
+              "state": "latest"
+            }
+          },
+          {
+            "name": "ensure curl exists",
+            "apt": {
+              "name": "curl",
+              "state": "latest"
+            }
+          },
+          {
+            "name": "ensure software-properties-common exists",
+            "apt": {
+              "name": "software-properties-common",
+              "state": "latest"
+            }
+          },
+          {
+            "name": "get apt-key for docker repo",
+            "apt_key": {
+              "url": "https://download.docker.com/linux/ubuntu/gpg"
+              "state": "present"
+            }
+          },
+          {
+            "name": format("ensure docker apt repo exists in %s", var.ansible_group)
+            "apt_repository": {
+              "repo": "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable",
+              "state": "present"
+            }
+          },
+          {
+            "name": "install docker-ce"
+            "apt": {
+              "name": "docker-ce",
+              "state": "latest"
+            }
+          }
+        ]
+      }
+      ])
     ]
   )
 }
 
 resource "null_resource" "install_ansible" {
   depends_on = [
-    linode_instance.control_plane,
     local_file.farm_ip_addresses,
-    local_file.ansible_ssh_config
+    local_file.ansible_playbook
   ]
+
+  triggers = {
+    control_plane_ip = linode_instance.control_plane.ip_address
+    farm_ip_addresses = local_file.farm_ip_addresses.id
+    ansible_playbook = local_file.ansible_playbook.id
+  }
 
   connection {
     type = "ssh"
@@ -67,7 +110,9 @@ resource "null_resource" "install_ansible" {
         "apt update",
         "apt install ansible sshpass -y",
         "mkdir -p /etc/ansible",
-        "touch /etc/ansible/hosts"
+        "touch /etc/ansible/hosts",
+        "which ansible",
+        "which ansible-playbook"
       ])
     ]
   }
@@ -84,5 +129,14 @@ resource "null_resource" "install_ansible" {
 
   provisioner "remote-exec" {
     inline = [format("ansible %s -m ping", var.ansible_group)]
+  }
+
+  provisioner "file" {
+    source = "ansible/playbook.yaml"
+    destination = "/root/playbook.yaml"
+  }
+
+  provisioner "remote-exec" {
+    inline = ["ansible-playbook playbook.yaml"]
   }
 }

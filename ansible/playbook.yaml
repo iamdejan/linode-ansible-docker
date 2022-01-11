@@ -1,0 +1,32 @@
+---
+- "hosts": "farm"
+  "name": "docker"
+  "tasks":
+  - "apt":
+      "name": "apt-transport-https"
+      "state": "latest"
+    "name": "ensure apt-transport-https exists"
+  - "apt":
+      "name": "ca-certificates"
+      "state": "latest"
+    "name": "ensure ca-certificates exists"
+  - "apt":
+      "name": "curl"
+      "state": "latest"
+    "name": "ensure curl exists"
+  - "apt":
+      "name": "software-properties-common"
+      "state": "latest"
+    "name": "ensure software-properties-common exists"
+  - "apt_key":
+      "state": "present"
+      "url": "https://download.docker.com/linux/ubuntu/gpg"
+    "name": "get apt-key for docker repo"
+  - "apt_repository":
+      "repo": "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
+      "state": "present"
+    "name": "ensure docker apt repo exists in farm"
+  - "apt":
+      "name": "docker-ce"
+      "state": "latest"
+    "name": "install docker-ce"
