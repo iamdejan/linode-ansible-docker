@@ -28,35 +28,7 @@ resource "local_file" "ansible_playbook" {
         {
         "name": "docker",
         "hosts": var.ansible_group,
-        "tasks": [
-          {
-            "name": "ensure apt-transport-https exists",
-            "apt": {
-              "name": "apt-transport-https"
-              "state": "latest"
-            }
-          },
-          {
-            "name": "ensure ca-certificates exists",
-            "apt": {
-              "name": "ca-certificates",
-              "state": "latest"
-            }
-          },
-          {
-            "name": "ensure curl exists",
-            "apt": {
-              "name": "curl",
-              "state": "latest"
-            }
-          },
-          {
-            "name": "ensure software-properties-common exists",
-            "apt": {
-              "name": "software-properties-common",
-              "state": "latest"
-            }
-          },
+        "tasks": concat([
           {
             "name": "get apt-key for docker repo",
             "apt_key": {
@@ -70,22 +42,21 @@ resource "local_file" "ansible_playbook" {
               "repo": "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable",
               "state": "present"
             }
-          },
-          {
-            "name": "install docker-ce"
-            "apt": {
-              "name": "docker-ce",
-              "state": "latest"
-            }
           }
-        ]
+        ], [for pkg in ["curl", "software-properties-common", "ca-certificates", "apt-transport-https", "docker-ce"]: {
+          "name": format("ensure %s exists", pkg),
+          "apt": {
+            "name": pkg,
+            "state": "latest"
+          }
+        }])
       }
       ])
     ]
   )
 }
 
-resource "null_resource" "install_ansible" {
+resource "null_resource" "provision_ansible" {
   depends_on = [
     local_file.farm_ip_addresses,
     local_file.ansible_playbook
@@ -93,8 +64,8 @@ resource "null_resource" "install_ansible" {
 
   triggers = {
     control_plane_ip = linode_instance.control_plane.ip_address
-    farm_ip_addresses = local_file.farm_ip_addresses.id
-    ansible_playbook = local_file.ansible_playbook.id
+    farm_ip_addresses_id = local_file.farm_ip_addresses.id
+    ansible_playbook_id = local_file.ansible_playbook.id
   }
 
   connection {
