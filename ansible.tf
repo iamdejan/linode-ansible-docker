@@ -65,7 +65,7 @@ resource "local_file" "ansible_playbook" {
             }
           },
           {
-            "name": format("ensure docker apt repo exists in %s", var.ansible_group)
+            "name": "ensure docker official repo exists"
             "apt_repository": {
               "repo": "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable",
               "state": "present"

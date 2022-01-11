@@ -1,8 +1,0 @@
-[farm]
-139.177.186.174
-139.177.186.145
-172.104.55.19
-
-[farm:vars]
-ansible_user=root
-ansible_password=D3J4N@l1n0d3.c0m!100
