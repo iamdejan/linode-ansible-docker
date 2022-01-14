@@ -11,22 +11,38 @@ resource "local_file" "farm_ip_addresses" {
         format("[%s:vars]", var.ansible_group),
         format("ansible_user=%s", var.root_user),
         format("ansible_password=%s", var.root_password),
+        "",
+        format("[%s]", var.swarm_leader),
+        linode_instance.farm[0].ip_address,
+        "",
+        format("[%s:vars]", var.swarm_leader),
+        format("ansible_user=%s", var.root_user),
+        format("ansible_password=%s", var.root_password),
+        "",
+        format("[%s]", var.swarm_worker)
+      ],
+      [for instance in slice(linode_instance.farm, 1, length(linode_instance.farm)): instance.ip_address],
+      [
+        "",
+        format("[%s:vars]", var.swarm_worker),
+        format("ansible_user=%s", var.root_user),
+        format("ansible_password=%s", var.root_password),
         ""
       ]
     )
   )
 }
 
-resource "local_file" "ansible_playbook" {
+resource "local_file" "initiate_docker_playbook" {
   depends_on = [linode_instance.control_plane]
-  filename = "ansible/playbook.yaml"
+  filename = "ansible/initiate-docker-playbook.yaml"
   content = join(
-    "\n",
+    "---\n",
     [
-      "---",
+      "",
       yamlencode([
         {
-          "name": "docker",
+          "name": "initiate-docker-playbook",
           "hosts": var.ansible_group,
           "tasks": concat([
             {
@@ -43,7 +59,7 @@ resource "local_file" "ansible_playbook" {
                 "state": "present"
               }
             }
-          ], [for pkg in ["curl", "software-properties-common", "ca-certificates", "apt-transport-https", "docker-ce"]: {
+          ], [for pkg in ["curl", "software-properties-common", "ca-certificates", "apt-transport-https", "docker-ce", "python-is-python3"]: {
             "name": format("ensure %s exists", pkg),
             "apt": {
               "name": pkg,
@@ -59,13 +75,13 @@ resource "local_file" "ansible_playbook" {
 resource "null_resource" "provision_ansible" {
   depends_on = [
     local_file.farm_ip_addresses,
-    local_file.ansible_playbook
+    local_file.initiate_docker_playbook
   ]
 
   triggers = {
     control_plane_ip = linode_instance.control_plane.ip_address
     farm_ip_addresses_id = local_file.farm_ip_addresses.id
-    ansible_playbook_id = local_file.ansible_playbook.id
+    ansible_playbook_id = local_file.initiate_docker_playbook.id
   }
 
   connection {
@@ -94,7 +110,7 @@ resource "null_resource" "provision_ansible" {
   }
 
   provisioner "file" {
-    source = "ansible/hosts"
+    source = local_file.farm_ip_addresses.filename
     destination = "/etc/ansible/hosts"
   }
 
@@ -103,11 +119,11 @@ resource "null_resource" "provision_ansible" {
   }
 
   provisioner "file" {
-    source = "ansible/playbook.yaml"
-    destination = "/root/playbook.yaml"
+    source = local_file.initiate_docker_playbook.filename
+    destination = "/root/initiate-docker-playbook.yaml"
   }
 
   provisioner "remote-exec" {
-    inline = ["ansible-playbook playbook.yaml"]
+    inline = ["ansible-playbook initiate-docker-playbook.yaml"]
   }
 }

@@ -1,5 +1,5 @@
 ansible/hosts
-ansible/playbook.yaml
+ansible/*.yaml
 
 # Created by https://www.toptal.com/developers/gitignore/api/terraform,macos,linux,windows,visualstudiocode
 # Edit at https://www.toptal.com/developers/gitignore?templates=terraform,macos,linux,windows,visualstudiocode

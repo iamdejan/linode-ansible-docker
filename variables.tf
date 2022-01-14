@@ -27,3 +27,23 @@ variable "ansible_group" {
   description = "Group name for Ansible execution later."
   default = "farm"
 }
+
+variable "swarm_leader" {
+  description = "Group name for Docker Swarm leader"
+  default = "leader"
+}
+
+variable "swarm_worker" {
+  description = "Group name for Docker Swarm workers"
+  default = "worker"
+}
+
+variable "swarm_worker_token" {
+  description = "Join token for Docker Swarm workers"
+  default = "worker_token"
+}
+
+variable "leave_after_join" {
+  description = "Just for testing purposes - feature flag that indicates whether workers leave swarm after joining"
+  default = true
+}
