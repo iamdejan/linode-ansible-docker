@@ -45,5 +45,4 @@ variable "swarm_worker_token" {
 
 variable "leave_after_join" {
   description = "Just for testing purposes - feature flag that indicates whether workers leave swarm after joining"
-  default = true
 }

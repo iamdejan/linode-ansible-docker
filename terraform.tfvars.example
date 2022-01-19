@@ -1,0 +1,3 @@
+token="Linode token here"
+root_password="Root password here"
+leave_after_join=false
